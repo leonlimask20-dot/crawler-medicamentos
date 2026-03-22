@@ -112,6 +112,6 @@ mvn test
 
 ## Autor
 
-**Leon Nogueira Lima**
+**LNL**
 GitHub: [@leonlimask20-dot](https://github.com/leonlimask20-dot)
 Email: leonlimask@gmail.com
