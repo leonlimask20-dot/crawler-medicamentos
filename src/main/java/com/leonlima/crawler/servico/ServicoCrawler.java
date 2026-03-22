@@ -18,13 +18,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Coleta dados de medicamentos do portal público da ANVISA via JSOUP.
- *
- * O JSOUP é adequado aqui porque o portal usa server-side rendering —
- * os dados chegam no HTML da resposta HTTP, sem necessidade de executar JavaScript.
- * Para sites dinâmicos (React, Angular), seria necessário usar Selenium.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,73 +31,71 @@ public class ServicoCrawler {
     @Value("${crawler.user-agent}")
     private String userAgent;
 
-    private static final String URL_ANVISA =
-        "https://consultas.anvisa.gov.br/#/medicamentos/q/?substancia=paracetamol&situacaoRegistro=A";
+    private static final String URL_BUSCA =
+        "https://pt.wikipedia.org/wiki/Lista_de_medicamentos_essenciais_da_OMS";
 
     @Transactional
     public MedicamentoDTO.ResultadoCrawl executar() {
-        log.info("Iniciando coleta de medicamentos na ANVISA");
+        log.info("Iniciando coleta de medicamentos");
 
         List<Medicamento> coletados = new ArrayList<>();
 
         try {
-            // Jsoup.connect() faz o GET e retorna o HTML parseado como árvore DOM
-            Document pagina = Jsoup.connect(URL_ANVISA)
+            Document pagina = Jsoup.connect(URL_BUSCA)
                     .userAgent(userAgent)
                     .timeout(timeoutMs)
                     .get();
 
             log.info("Página obtida — título: {}", pagina.title());
 
-            // select() navega na árvore DOM com seletores CSS, igual ao querySelector do JavaScript
-            Elements linhas = pagina.select("table tbody tr");
-            log.info("Linhas encontradas: {}", linhas.size());
+            Elements itens = pagina.select("table.wikitable td:first-child");
+		if (itens.isEmpty()) {
+   		 itens = pagina.select("div#mw-content-text li");
+  		  log.info("Usando seletor de lista — itens: {}", itens.size());
+			} else {
+  		  log.info("Usando seletor de tabela — itens: {}", itens.size());
+		}
+            log.info("Itens encontrados: {}", itens.size());
 
-            for (Element linha : linhas) {
-                Elements celulas = linha.select("td");
-                if (celulas.size() < 4) continue;
+            int contador = 0;
+            for (Element item : itens) {
+                if (contador >= 20) break;
 
-                // element.text() retorna o texto visível, removendo as tags HTML
-                String numeroRegistro = celulas.get(0).text().trim();
-                String nome           = celulas.get(1).text().trim();
-                String principioAtivo = celulas.get(2).text().trim();
-                String laboratorio    = celulas.get(3).text().trim();
-                String situacao       = celulas.size() > 4 ? celulas.get(4).text().trim() : "";
+                String nome = item.text().trim();
+                if (nome.length() < 4 || nome.length() > 80) continue;
+                if (nome.contains("[") || nome.contains("=")) continue;
 
-                if (nome.isEmpty()) continue;
-
-                // Não salva se já existe — evita duplicatas em execuções repetidas
-                if (repositorio.existsByNumeroRegistro(numeroRegistro)) continue;
+                String chave = nome.toLowerCase().replaceAll("[^a-z0-9]", "");
+                if (chave.length() > 30) chave = chave.substring(0, 30);
+                if (chave.isEmpty() || repositorio.existsByNumeroRegistro(chave)) continue;
 
                 coletados.add(Medicamento.builder()
                         .nome(nome)
-                        .principioAtivo(principioAtivo)
-                        .laboratorio(laboratorio)
-                        .numeroRegistro(numeroRegistro)
-                        .situacao(situacao)
-                        .urlOrigem(URL_ANVISA)
+                        .principioAtivo(nome.split(" ")[0])
+                        .situacao("Essencial OMS")
+                        .numeroRegistro(chave)
+                        .urlOrigem(URL_BUSCA)
                         .build());
+
+                contador++;
             }
 
-            if (!coletados.isEmpty()) {
-                repositorio.saveAll(coletados);
-            }
-
+            if (!coletados.isEmpty()) repositorio.saveAll(coletados);
             log.info("{} medicamentos salvos", coletados.size());
 
         } catch (IOException e) {
-            log.error("Falha ao acessar a ANVISA: {}", e.getMessage());
+            log.error("Falha ao acessar o site: {}", e.getMessage());
             return MedicamentoDTO.ResultadoCrawl.builder()
                     .totalColetado(0).totalSalvo(0)
-                    .fonte(URL_ANVISA).executadoEm(LocalDateTime.now())
-                    .mensagem("Erro ao acessar o site: " + e.getMessage())
+                    .fonte(URL_BUSCA).executadoEm(LocalDateTime.now())
+                    .mensagem("Erro: " + e.getMessage())
                     .build();
         }
 
         return MedicamentoDTO.ResultadoCrawl.builder()
                 .totalColetado(coletados.size())
                 .totalSalvo(coletados.size())
-                .fonte(URL_ANVISA)
+                .fonte(URL_BUSCA)
                 .executadoEm(LocalDateTime.now())
                 .mensagem(coletados.isEmpty()
                     ? "Nenhum medicamento novo encontrado"
