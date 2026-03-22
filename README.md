@@ -1,5 +1,5 @@
 # Crawler de Medicamentos da ANVISA
-
+![CI](https://github.com/leonlimask20-dot/crawler-medicamentos/actions/workflows/ci.yml/badge.svg)
 Webcrawler que coleta dados de medicamentos do portal público da ANVISA com JSOUP e Spring Boot. Os dados são persistidos no banco e expostos via API REST.
 
 ---
