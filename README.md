@@ -1,12 +1,16 @@
-# Crawler de Medicamentos da ANVISA
+# ANVISA Medication Crawler
+
 ![CI](https://github.com/leonlimask20-dot/crawler-medicamentos/actions/workflows/ci.yml/badge.svg)
-Webcrawler que coleta dados de medicamentos do portal público da ANVISA com JSOUP e Spring Boot. Os dados são persistidos no banco e expostos via API REST.
+
+Web crawler that collects medication data from ANVISA's public portal using
+JSOUP and Spring Boot. The data is persisted to the database and exposed via a
+REST API. (ANVISA is the Brazilian health regulatory agency.)
 
 ---
 
-## Tecnologias
+## Tech stack
 
-| Tecnologia | Versão |
+| Technology | Version |
 |---|---|
 | Java | 17 |
 | Spring Boot | 3.2.3 |
@@ -17,44 +21,47 @@ Webcrawler que coleta dados de medicamentos do portal público da ANVISA com JSO
 
 ---
 
-## Como o JSOUP funciona
+## How JSOUP works
 
-O JSOUP faz uma requisição HTTP normal e faz o parse do HTML retornado — sem precisar de browser. É adequado para sites com server-side rendering, onde os dados chegam no próprio HTML da resposta.
+JSOUP makes a regular HTTP request and parses the returned HTML — no browser
+needed. It is suitable for server-side rendered sites, where the data arrives
+in the response HTML itself.
 
 ```java
-// Baixa o HTML da página
-Document pagina = Jsoup.connect("https://site.com")
+// Download the page HTML
+Document page = Jsoup.connect("https://site.com")
         .userAgent("Mozilla/5.0")
         .timeout(10000)
         .get();
 
-// Navega com seletores CSS — igual ao querySelector do JavaScript
-Elements linhas = pagina.select("table tbody tr");
+// Navigate with CSS selectors — just like JavaScript's querySelector
+Elements rows = page.select("table tbody tr");
 
-for (Element linha : linhas) {
-    String texto = linha.select("td").get(0).text();
+for (Element row : rows) {
+    String text = row.select("td").get(0).text();
 }
 ```
 
-Para sites que carregam dados via JavaScript (React, Angular), o JSOUP não é suficiente — nesses casos é necessário usar Selenium.
+For sites that load data via JavaScript (React, Angular), JSOUP is not enough —
+in those cases Selenium is required.
 
 ---
 
-## Arquitetura
+## Architecture
 
 ```
 src/main/java/com/leonlima/crawler/
-├── controller/   → ControladorMedicamento (endpoints REST)
-├── servico/      → ServicoCrawler (coleta), ServicoMedicamento (consultas)
+├── controller/   → ControladorMedicamento (REST endpoints)
+├── servico/      → ServicoCrawler (collection), ServicoMedicamento (queries)
 ├── repositorio/  → MedicamentoRepositorio (Spring Data JPA)
-├── modelo/       → Medicamento (entidade JPA)
-├── dto/          → MedicamentoDTO (resposta e resultado da coleta)
+├── modelo/       → Medicamento (JPA entity)
+├── dto/          → MedicamentoDTO (response and collection result)
 └── excecao/      → TratadorDeExcecoes
 ```
 
 ---
 
-## Como executar
+## How to run
 
 ```sql
 CREATE DATABASE crawlerdb;
@@ -64,26 +71,26 @@ CREATE DATABASE crawlerdb;
 mvn spring-boot:run
 ```
 
-API disponível em `http://localhost:8084`.
+API available at `http://localhost:8084`.
 
 ---
 
 ## Endpoints
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/api/medicamentos/coletar` | Executa o crawler na ANVISA |
-| GET | `/api/medicamentos` | Lista medicamentos coletados |
-| GET | `/api/medicamentos/{id}` | Busca por ID |
-| GET | `/api/medicamentos/busca?nome=` | Busca por nome |
-| GET | `/api/medicamentos/busca?principioAtivo=` | Busca por princípio ativo |
+| Method | Route | Description |
+|--------|------|-------------|
+| POST | `/api/medicamentos/coletar` | Run the crawler on ANVISA |
+| GET | `/api/medicamentos` | List collected medications |
+| GET | `/api/medicamentos/{id}` | Get by ID |
+| GET | `/api/medicamentos/busca?nome=` | Search by name |
+| GET | `/api/medicamentos/busca?principioAtivo=` | Search by active ingredient |
 
 ---
 
-## Exemplo
+## Example
 
 ```bash
-# Dispara a coleta
+# Trigger the collection
 curl -X POST http://localhost:8084/api/medicamentos/coletar
 ```
 
@@ -93,16 +100,16 @@ curl -X POST http://localhost:8084/api/medicamentos/coletar
   "totalSalvo": 25,
   "fonte": "https://consultas.anvisa.gov.br/...",
   "executadoEm": "2025-01-01T10:00:00",
-  "mensagem": "25 medicamentos coletados com sucesso"
+  "mensagem": "25 medications collected successfully"
 }
 ```
 
 ```bash
-# Consulta os dados
+# Query the data
 curl "http://localhost:8084/api/medicamentos/busca?nome=paracetamol"
 ```
 
-## Testes
+## Tests
 
 ```bash
 mvn test
@@ -110,7 +117,19 @@ mvn test
 
 ---
 
-## Autor
+## 🤖 Agent Architecture
+
+This project was built and code-reviewed using a **multi-agent
+context-optimization workflow**: specialized AI agents each audit a single
+slice of the codebase — crawling logic, persistence, REST layer, tests —
+within a strict context budget. The approach cuts review time and token cost
+while keeping full traceability of every finding.
+
+Methodology, agent templates and the full playbook: **[leonlim3.gumroad.com](https://leonlim3.gumroad.com)**
+
+---
+
+## Author
 
 **LNL**
 GitHub: [@leonlimask20-dot](https://github.com/leonlimask20-dot)
