@@ -1,4 +1,4 @@
-# ANVISA Medication Crawler
+﻿# ANVISA Medication Crawler
 
 ![CI](https://github.com/leonlimask20-dot/crawler-medicamentos/actions/workflows/ci.yml/badge.svg)
 
@@ -125,7 +125,7 @@ slice of the codebase — crawling logic, persistence, REST layer, tests —
 within a strict context budget. The approach cuts review time and token cost
 while keeping full traceability of every finding.
 
-Methodology, agent templates and the full playbook: **[leonlim3.gumroad.com](https://leonlim3.gumroad.com)**
+Methodology, agent templates and the full playbook: **[Stop Burning Context — Claude Code Playbook](https://leonlim3.gumroad.com/l/claude-code-context-playbook)**
 
 ---
 
